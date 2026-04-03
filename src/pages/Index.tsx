@@ -1,5 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+
+const API_MASTERS = "https://functions.poehali.dev/d3193bfc-373e-479a-8b9f-ef662d61aeac";
+
+interface Master {
+  id: number;
+  name: string;
+  role: string;
+  experienceYears: number;
+  specializations: string[];
+  rating: number;
+  reviewsCount: number;
+  avatarInitial: string;
+  isAvailable: boolean;
+  bio: string | null;
+  photoUrl: string | null;
+}
 
 const HERO_IMAGE = "https://cdn.poehali.dev/projects/eb59834d-a3eb-406d-a1e7-f6f0132456b8/files/87b940cd-cd15-48c3-b833-a5bf235eb340.jpg";
 
@@ -46,12 +62,7 @@ const SERVICES = [
   },
 ];
 
-const MASTERS = [
-  { name: "Анастасия Волкова", role: "Колорист-стилист", exp: "8 лет опыта", spec: ["Сложное окрашивание", "Кератин", "Стрижки"], rating: 4.9, reviews: 147, avatar: "А", available: true },
-  { name: "Екатерина Морозова", role: "Nail-мастер", exp: "6 лет опыта", spec: ["Маникюр", "Педикюр", "Nail-art"], rating: 4.8, reviews: 203, avatar: "Е", available: true },
-  { name: "Мария Соколова", role: "Бьюти-эксперт", exp: "10 лет опыта", spec: ["Перманентный макияж", "Уход за лицом", "Брови"], rating: 5.0, reviews: 89, avatar: "М", available: false },
-  { name: "Диана Лебедева", role: "Стилист", exp: "5 лет опыта", spec: ["Стрижки", "Укладки", "Свадебные образы"], rating: 4.7, reviews: 124, avatar: "Д", available: true },
-];
+
 
 const PORTFOLIO_ITEMS = [
   { category: "Окрашивание", label: "Balayage пепельный", color: "from-slate-700 to-slate-400" },
@@ -84,6 +95,18 @@ export default function Index() {
   const [selectedService, setSelectedService] = useState("");
   const [bookingStep, setBookingStep] = useState(1);
   const [isLoggedIn] = useState(false);
+  const [masters, setMasters] = useState<Master[]>([]);
+  const [mastersLoading, setMastersLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(API_MASTERS)
+      .then((r) => r.json())
+      .then((data) => {
+        const parsed = typeof data === "string" ? JSON.parse(data) : data;
+        setMasters(parsed.masters || []);
+      })
+      .finally(() => setMastersLoading(false));
+  }, []);
 
   const scrollTo = (id: string) => {
     setActiveSection(id);
@@ -253,44 +276,63 @@ export default function Index() {
           <p className="text-[10px] uppercase tracking-[0.2em] text-amber-400 mb-3">Наша команда</p>
           <h2 className="font-cormorant text-6xl font-light text-cream">Мастера</h2>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {MASTERS.map((master) => (
-            <div key={master.name} className="card-luxury rounded-sm overflow-hidden group">
-              <div className="h-48 flex items-center justify-center relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1A1A1A 0%, #242424 100%)" }}>
-                <span className="font-cormorant text-7xl font-light text-amber-400/35 group-hover:text-amber-400/65 transition-opacity duration-500">
-                  {master.avatar}
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-obsidian/50" />
-                <span className={`absolute top-3 right-3 text-[9px] uppercase tracking-wider px-2 py-1 border ${master.available ? "bg-green-900/50 text-green-400 border-green-800/40" : "bg-red-900/30 text-red-400/60 border-red-800/25"}`}>
-                  {master.available ? "Свободна" : "Занята"}
-                </span>
-              </div>
-              <div className="p-5">
-                <h3 className="font-cormorant text-xl font-medium text-cream mb-1">{master.name}</h3>
-                <p className="text-[10px] uppercase tracking-wider text-amber-400 mb-3">{master.role}</p>
-                <p className="text-cream/35 text-xs mb-3">{master.exp}</p>
-                <div className="flex flex-wrap gap-1 mb-4">
-                  {master.spec.map((s) => (
-                    <span key={s} className="text-[9px] text-cream/35 border border-amber-400/10 px-2 py-0.5">{s}</span>
-                  ))}
+        {mastersLoading ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="card-luxury rounded-sm overflow-hidden animate-pulse">
+                <div className="h-48 bg-obsidian/80" />
+                <div className="p-5 space-y-3">
+                  <div className="h-4 bg-amber-400/10 rounded w-3/4" />
+                  <div className="h-3 bg-amber-400/5 rounded w-1/2" />
+                  <div className="h-3 bg-amber-400/5 rounded w-1/3" />
                 </div>
-                <div className="flex items-center justify-between text-xs text-cream/40 mb-4">
-                  <div className="flex items-center gap-1">
-                    <Icon name="Star" size={11} className="text-amber-400" />
-                    <span className="text-amber-400 font-medium">{master.rating}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {masters.map((master) => (
+              <div key={master.id} className="card-luxury rounded-sm overflow-hidden group">
+                <div className="h-48 flex items-center justify-center relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1A1A1A 0%, #242424 100%)" }}>
+                  {master.photoUrl ? (
+                    <img src={master.photoUrl} alt={master.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="font-cormorant text-7xl font-light text-amber-400/35 group-hover:text-amber-400/65 transition-opacity duration-500">
+                      {master.avatarInitial}
+                    </span>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-obsidian/50" />
+                  <span className={`absolute top-3 right-3 text-[9px] uppercase tracking-wider px-2 py-1 border ${master.isAvailable ? "bg-green-900/50 text-green-400 border-green-800/40" : "bg-red-900/30 text-red-400/60 border-red-800/25"}`}>
+                    {master.isAvailable ? "Свободна" : "Занята"}
+                  </span>
+                </div>
+                <div className="p-5">
+                  <h3 className="font-cormorant text-xl font-medium text-cream mb-1">{master.name}</h3>
+                  <p className="text-[10px] uppercase tracking-wider text-amber-400 mb-3">{master.role}</p>
+                  <p className="text-cream/35 text-xs mb-3">{master.experienceYears} лет опыта</p>
+                  <div className="flex flex-wrap gap-1 mb-4">
+                    {master.specializations.map((s) => (
+                      <span key={s} className="text-[9px] text-cream/35 border border-amber-400/10 px-2 py-0.5">{s}</span>
+                    ))}
                   </div>
-                  <span>{master.reviews} отзывов</span>
+                  <div className="flex items-center justify-between text-xs text-cream/40 mb-4">
+                    <div className="flex items-center gap-1">
+                      <Icon name="Star" size={11} className="text-amber-400" />
+                      <span className="text-amber-400 font-medium">{master.rating}</span>
+                    </div>
+                    <span>{master.reviewsCount} отзывов</span>
+                  </div>
+                  <button
+                    onClick={() => { setSelectedMaster(master.name); scrollTo("booking"); }}
+                    className="w-full btn-outline-gold py-2 text-[10px]"
+                  >
+                    Записаться
+                  </button>
                 </div>
-                <button
-                  onClick={() => { setSelectedMaster(master.name); scrollTo("booking"); }}
-                  className="w-full btn-outline-gold py-2 text-[10px]"
-                >
-                  Записаться
-                </button>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <div className="section-divider max-w-7xl mx-auto" />
@@ -349,8 +391,8 @@ export default function Index() {
               <div>
                 <label className="text-[10px] uppercase tracking-wider text-cream/35 block mb-3">Мастер</label>
                 <div className="grid grid-cols-2 gap-3">
-                  {MASTERS.map((m) => (
-                    <button key={m.name} onClick={() => setSelectedMaster(m.name)} className={`p-3 border text-left transition-all ${selectedMaster === m.name ? "border-amber-400 bg-amber-400/10" : "border-amber-400/15 hover:border-amber-400/30"}`}>
+                  {masters.map((m) => (
+                    <button key={m.id} onClick={() => setSelectedMaster(m.name)} className={`p-3 border text-left transition-all ${selectedMaster === m.name ? "border-amber-400 bg-amber-400/10" : "border-amber-400/15 hover:border-amber-400/30"}`}>
                       <p className="text-sm text-cream">{m.name}</p>
                       <p className="text-[10px] uppercase tracking-wider text-cream/35 mt-0.5">{m.role}</p>
                     </button>
