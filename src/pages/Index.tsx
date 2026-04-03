@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+import BookingModal from "@/components/BookingModal";
 
 const API_MASTERS = "https://functions.poehali.dev/d3193bfc-373e-479a-8b9f-ef662d61aeac";
 
@@ -23,7 +24,6 @@ const NAV_ITEMS = [
   { id: "home", label: "Главная" },
   { id: "services", label: "Услуги" },
   { id: "masters", label: "Мастера" },
-  { id: "booking", label: "Запись" },
   { id: "portfolio", label: "Портфолио" },
   { id: "reviews", label: "Отзывы" },
   { id: "contacts", label: "Контакты" },
@@ -90,11 +90,16 @@ export default function Index() {
   const [activeSection, setActiveSection] = useState("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("Волосы");
-  const [selectedDate, setSelectedDate] = useState("");
-  const [selectedMaster, setSelectedMaster] = useState("");
-  const [selectedService, setSelectedService] = useState("");
-  const [bookingStep, setBookingStep] = useState(1);
-  const [isLoggedIn] = useState(false);
+
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [bookingService, setBookingService] = useState("");
+  const [bookingMaster, setBookingMaster] = useState("");
+
+  const openBooking = (service = "", master = "") => {
+    setBookingService(service);
+    setBookingMaster(master);
+    setBookingOpen(true);
+  };
   const [masters, setMasters] = useState<Master[]>([]);
   const [mastersLoading, setMastersLoading] = useState(true);
 
@@ -118,6 +123,14 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-obsidian text-cream font-montserrat">
 
+      <BookingModal
+        isOpen={bookingOpen}
+        onClose={() => setBookingOpen(false)}
+        masters={masters}
+        initialService={bookingService}
+        initialMaster={bookingMaster}
+      />
+
       {/* NAVIGATION */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-obsidian/90 backdrop-blur-md border-b border-gold/10">
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
@@ -138,7 +151,7 @@ export default function Index() {
             ))}
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={() => scrollTo("booking")} className="hidden lg:block btn-gold px-5 py-2 rounded-sm">
+            <button onClick={() => openBooking()} className="hidden lg:block btn-gold px-5 py-2 rounded-sm">
               Записаться
             </button>
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="lg:hidden text-cream/70">
@@ -153,7 +166,7 @@ export default function Index() {
                 {item.label}
               </button>
             ))}
-            <button onClick={() => scrollTo("booking")} className="btn-gold px-5 py-2 rounded-sm mt-2">
+            <button onClick={() => openBooking()} className="btn-gold px-5 py-2 rounded-sm mt-2">
               Записаться
             </button>
           </div>
@@ -179,7 +192,7 @@ export default function Index() {
               Мы создаём образы, которые отражают вашу уникальность. Профессиональные мастера, люксовые бренды, атмосфера абсолютного комфорта.
             </p>
             <div className="flex flex-wrap gap-4 animate-fade-in opacity-0 delay-300">
-              <button onClick={() => scrollTo("booking")} className="btn-gold px-8 py-3 rounded-sm">
+              <button onClick={() => openBooking()} className="btn-gold px-8 py-3 rounded-sm">
                 Записаться онлайн
               </button>
               <button onClick={() => scrollTo("services")} className="btn-outline-gold px-8 py-3 rounded-sm">
@@ -258,7 +271,7 @@ export default function Index() {
                     <Icon name="Clock" size={12} />
                     <span className="text-[10px] uppercase tracking-wider">{item.duration}</span>
                   </div>
-                  <button onClick={() => { setSelectedService(item.name); scrollTo("booking"); }} className="text-[10px] uppercase tracking-wider text-amber-400 hover:underline">
+                  <button onClick={() => openBooking(item.name)} className="text-[10px] uppercase tracking-wider text-amber-400 hover:underline">
                     Записаться →
                   </button>
                 </div>
@@ -323,7 +336,7 @@ export default function Index() {
                     <span>{master.reviewsCount} отзывов</span>
                   </div>
                   <button
-                    onClick={() => { setSelectedMaster(master.name); scrollTo("booking"); }}
+                    onClick={() => openBooking("", master.name)}
                     className="w-full btn-outline-gold py-2 text-[10px]"
                   >
                     Записаться
@@ -334,117 +347,6 @@ export default function Index() {
           </div>
         )}
       </section>
-
-      <div className="section-divider max-w-7xl mx-auto" />
-
-      {/* BOOKING */}
-      <section id="booking" className="py-24 max-w-3xl mx-auto px-6">
-        <div className="mb-16 text-center">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-amber-400 mb-3">Онлайн-запись</p>
-          <h2 className="font-cormorant text-6xl font-light text-cream">Записаться на приём</h2>
-          <p className="text-cream/35 text-sm mt-4 max-w-md mx-auto">Подтверждение придёт в течение нескольких минут. Бесплатная отмена за 24 часа.</p>
-        </div>
-        <div className="card-luxury rounded-sm p-8 md:p-12">
-          {/* Steps */}
-          <div className="flex items-center justify-center gap-0 mb-12">
-            {[1, 2, 3].map((step) => (
-              <div key={step} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300 ${bookingStep >= step ? "bg-amber-400 text-obsidian" : "border border-amber-400/20 text-cream/25"}`}>
-                  {bookingStep > step ? <Icon name="Check" size={12} /> : step}
-                </div>
-                {step < 3 && <div className={`w-24 h-px transition-all duration-300 ${bookingStep > step ? "bg-amber-400/50" : "bg-amber-400/10"}`} />}
-              </div>
-            ))}
-          </div>
-
-          {bookingStep === 1 && (
-            <div className="space-y-6">
-              <h3 className="font-cormorant text-2xl text-center text-cream mb-8">Выберите услугу</h3>
-              <div>
-                <label className="text-[10px] uppercase tracking-wider text-cream/35 block mb-3">Категория</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {SERVICES.map((s) => (
-                    <button key={s.category} onClick={() => setSelectedCategory(s.category)} className={`p-3 border text-sm transition-all ${selectedCategory === s.category ? "border-amber-400 bg-amber-400/10 text-amber-400" : "border-amber-400/15 text-cream/45 hover:border-amber-400/30"}`}>
-                      {s.category}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wider text-cream/35 block mb-3">Услуга</label>
-                <select value={selectedService} onChange={(e) => setSelectedService(e.target.value)} className="w-full bg-obsidian border border-amber-400/20 text-cream px-4 py-3 text-sm focus:border-amber-400/50 outline-none">
-                  <option value="">— Выберите услугу —</option>
-                  {SERVICES.find((s) => s.category === selectedCategory)?.items.map((item) => (
-                    <option key={item.name} value={item.name}>{item.name} · {item.price}</option>
-                  ))}
-                </select>
-              </div>
-              <button onClick={() => selectedService && setBookingStep(2)} className={`w-full py-3 btn-gold rounded-sm mt-4 ${!selectedService ? "opacity-40 cursor-not-allowed" : ""}`}>
-                Далее
-              </button>
-            </div>
-          )}
-
-          {bookingStep === 2 && (
-            <div className="space-y-6">
-              <h3 className="font-cormorant text-2xl text-center text-cream mb-8">Мастер и дата</h3>
-              <div>
-                <label className="text-[10px] uppercase tracking-wider text-cream/35 block mb-3">Мастер</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {masters.map((m) => (
-                    <button key={m.id} onClick={() => setSelectedMaster(m.name)} className={`p-3 border text-left transition-all ${selectedMaster === m.name ? "border-amber-400 bg-amber-400/10" : "border-amber-400/15 hover:border-amber-400/30"}`}>
-                      <p className="text-sm text-cream">{m.name}</p>
-                      <p className="text-[10px] uppercase tracking-wider text-cream/35 mt-0.5">{m.role}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wider text-cream/35 block mb-3">Дата и время</label>
-                <input type="datetime-local" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-full bg-obsidian border border-amber-400/20 text-cream px-4 py-3 text-sm focus:border-amber-400/50 outline-none" />
-              </div>
-              <div className="flex gap-3 mt-4">
-                <button onClick={() => setBookingStep(1)} className="flex-1 btn-outline-gold py-3 rounded-sm">Назад</button>
-                <button onClick={() => selectedMaster && selectedDate && setBookingStep(3)} className={`flex-1 btn-gold py-3 rounded-sm ${!selectedMaster || !selectedDate ? "opacity-40 cursor-not-allowed" : ""}`}>Далее</button>
-              </div>
-            </div>
-          )}
-
-          {bookingStep === 3 && (
-            <div className="space-y-6">
-              <h3 className="font-cormorant text-2xl text-center text-cream mb-8">Ваши данные</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider text-cream/35 block mb-2">Имя</label>
-                  <input type="text" placeholder="Ваше имя" className="w-full bg-obsidian border border-amber-400/20 text-cream placeholder-cream/20 px-4 py-3 text-sm focus:border-amber-400/50 outline-none" />
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider text-cream/35 block mb-2">Телефон</label>
-                  <input type="tel" placeholder="+7 (___) ___-__-__" className="w-full bg-obsidian border border-amber-400/20 text-cream placeholder-cream/20 px-4 py-3 text-sm focus:border-amber-400/50 outline-none" />
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wider text-cream/35 block mb-2">Email</label>
-                <input type="email" placeholder="email@example.com" className="w-full bg-obsidian border border-amber-400/20 text-cream placeholder-cream/20 px-4 py-3 text-sm focus:border-amber-400/50 outline-none" />
-              </div>
-              <div className="bg-obsidian/60 border border-amber-400/15 p-4">
-                <p className="text-[10px] uppercase tracking-wider text-cream/30 mb-3">Итог записи</p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-cream/40">Услуга</span><span className="text-cream">{selectedService || "—"}</span></div>
-                  <div className="flex justify-between"><span className="text-cream/40">Мастер</span><span className="text-cream">{selectedMaster || "—"}</span></div>
-                  <div className="flex justify-between"><span className="text-cream/40">Дата</span><span className="text-cream">{selectedDate ? new Date(selectedDate).toLocaleString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : "—"}</span></div>
-                </div>
-              </div>
-              <div className="flex gap-3 mt-4">
-                <button onClick={() => setBookingStep(2)} className="flex-1 btn-outline-gold py-3 rounded-sm">Назад</button>
-                <button className="flex-1 btn-gold py-3 rounded-sm">Подтвердить запись</button>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <div className="section-divider max-w-7xl mx-auto" />
 
       {/* PORTFOLIO */}
       <section id="portfolio" className="py-24">
@@ -604,8 +506,7 @@ export default function Index() {
             <p className="text-[10px] uppercase tracking-[0.2em] text-amber-400 mb-2">Личный кабинет</p>
             <h2 className="font-cormorant text-4xl font-light text-cream">Профиль клиента</h2>
           </div>
-          {!isLoggedIn ? (
-            <div className="card-luxury rounded-sm p-10 text-center">
+          <div className="card-luxury rounded-sm p-10 text-center">
               <div className="w-16 h-16 border border-amber-400/20 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Icon name="User" size={24} className="text-amber-400/50" />
               </div>
@@ -625,7 +526,6 @@ export default function Index() {
                 ))}
               </div>
             </div>
-          ) : null}
         </div>
       </section>
 
